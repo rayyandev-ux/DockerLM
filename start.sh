@@ -108,31 +108,22 @@ export LMSTUDIO_API_PORT=1234
 # Esperar a que Xvfb se inicie
 sleep 2
 
-# Ejecutar LM Studio DIRECTAMENTE en puerto 1234
-echo "🔄 Iniciando LM Studio DIRECTAMENTE en puerto 1234..."
+# Ejecutar LM Studio en modo servidor con display virtual
+echo "🔄 Iniciando servidor LM Studio con display virtual..."
 
-# Forzar puerto 1234 con todos los flags posibles
+# Iniciar LM Studio de forma simple (deja que use su puerto preferido)
 $EXECUTABLE \
     --no-sandbox \
     --disable-gpu \
     --disable-dev-shm-usage \
-    --headless \
-    --host 0.0.0.0 \
-    --port 1234 \
-    --server-port 1234 \
-    --api-port 1234 \
-    --http-port 1234 \
-    --server \
-    --api \
-    --enable-server \
-    --enable-api &
+    --headless &
 
 LM_PID=$!
-echo "🔄 LM Studio iniciado DIRECTAMENTE en puerto 1234 (PID: $LM_PID)"
+echo "🔄 LM Studio iniciado con PID: $LM_PID"
 
-# Esperar y verificar
-echo "⏳ Esperando a que LM Studio inicie en puerto 1234..."
-sleep 60
+# Esperar a que LM Studio esté completamente listo
+echo "⏳ Esperando a que LM Studio inicie completamente..."
+sleep 45
 
 # Verificar que el proceso sigue vivo
 if ! kill -0 $LM_PID 2>/dev/null; then
@@ -140,26 +131,65 @@ if ! kill -0 $LM_PID 2>/dev/null; then
     echo "🔍 Verificando logs..."
     ps aux | grep lm-studio || echo "❌ Proceso no encontrado"
 else
-    echo "✅ LM Studio ejecutándose en puerto 1234 (PID: $LM_PID)"
+    echo "✅ LM Studio ejecutándose (PID: $LM_PID)"
 fi
 
-# Verificar conectividad directa
-echo "🔍 Verificando conectividad en puerto 1234..."
-if curl -s http://localhost:1234/ >/dev/null 2>&1; then
-    echo "✅ LM Studio respondiendo en puerto 1234"
+# Iniciar el servidor proxy mejorado
+echo "🚀 Iniciando servidor proxy mejorado en puerto 1234..."
+cd /opt
+
+# Verificar que Node.js está disponible
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js no encontrado"
+    exit 1
+fi
+
+# Verificar que el archivo proxy existe
+if [ ! -f "proxy-server.js" ]; then
+    echo "❌ proxy-server.js no encontrado"
+    exit 1
+fi
+
+echo "📋 Iniciando proxy inteligente con Node.js..."
+node proxy-server.js &
+
+PROXY_PID=$!
+echo "🔄 Proxy iniciado con PID: $PROXY_PID"
+
+# Verificar que ambos procesos están vivos
+sleep 10
+echo "🔍 Verificando estado de los servicios..."
+
+if kill -0 $LM_PID 2>/dev/null; then
+    echo "✅ LM Studio activo (PID: $LM_PID)"
 else
-    echo "⚠️ LM Studio puede estar iniciando aún..."
+    echo "❌ LM Studio no está ejecutándose"
 fi
 
-echo "✅ Sistema listo - LM Studio DIRECTO en puerto 1234"
+if kill -0 $PROXY_PID 2>/dev/null; then
+    echo "✅ Proxy activo (PID: $PROXY_PID)"
+else
+    echo "❌ Proxy no está ejecutándose"
+fi
+
+# Verificar conectividad del proxy
+echo "🔍 Verificando conectividad del proxy..."
+if curl -s http://localhost:1234/ >/dev/null 2>&1; then
+    echo "✅ Proxy respondiendo en puerto 1234"
+else
+    echo "⚠️ Proxy puede estar iniciando aún..."
+fi
+
+echo "✅ Sistema listo - LM Studio + Proxy Inteligente"
 echo "🌐 API disponible en: http://0.0.0.0:1234/v1/models"
+echo "🔍 Health check: http://0.0.0.0:1234/health"
 
 # Mantener el contenedor vivo
 while true; do
     sleep 30
-    # Verificar que el proceso sigue vivo
-    if ! kill -0 $LM_PID 2>/dev/null; then
-        echo "❌ LM Studio se detuvo"
+    # Verificar que al menos uno de los procesos sigue vivo
+    if ! kill -0 $LM_PID 2>/dev/null && ! kill -0 $PROXY_PID 2>/dev/null; then
+        echo "❌ Todos los procesos se detuvieron"
         exit 1
     fi
 done

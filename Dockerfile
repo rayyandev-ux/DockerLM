@@ -92,7 +92,8 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Script de inicio
 COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+COPY start-lmstudio.sh /usr/local/bin/start-lmstudio.sh
+RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/start-lmstudio.sh
 
 # Cambiar propietario de archivos
 RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio

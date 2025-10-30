@@ -118,17 +118,52 @@ $EXECUTABLE \
 LM_PID=$!
 echo "🔄 LM Studio iniciado con PID: $LM_PID"
 
-# Esperar a que LM Studio esté listo
+# Esperar a que LM Studio esté listo con verificación
 echo "⏳ Esperando a que LM Studio inicie..."
-sleep 10
+for i in {1..30}; do
+    sleep 2
+    echo "⏳ Intento $i/30 - Verificando LM Studio..."
+    if curl -s http://localhost:41343/ >/dev/null 2>&1; then
+        echo "✅ LM Studio respondiendo en puerto 41343"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ LM Studio no responde después de 60 segundos"
+        echo "🔍 Verificando proceso LM Studio..."
+        ps aux | grep lm-studio || echo "❌ Proceso LM Studio no encontrado"
+        echo "🔍 Iniciando proxy de todas formas..."
+    fi
+done
 
 # Iniciar el servidor proxy
 echo "🚀 Iniciando servidor proxy en puerto 1234..."
 cd /opt
+
+# Verificar que Node.js está disponible
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js no encontrado"
+    exit 1
+fi
+
+# Verificar que el archivo proxy existe
+if [ ! -f "proxy-server.js" ]; then
+    echo "❌ proxy-server.js no encontrado"
+    exit 1
+fi
+
+echo "📋 Iniciando proxy con Node.js..."
 node proxy-server.js &
 
 PROXY_PID=$!
 echo "🔄 Proxy iniciado con PID: $PROXY_PID"
+
+# Verificar que el proxy está funcionando
+sleep 5
+if curl -s http://localhost:1234/ >/dev/null 2>&1; then
+    echo "✅ Proxy respondiendo en puerto 1234"
+else
+    echo "❌ Proxy no responde en puerto 1234"
+fi
 
 # Mantener ambos procesos vivos
 echo "✅ Sistema listo - LM Studio (puerto 41343) + Proxy (puerto 1234)"

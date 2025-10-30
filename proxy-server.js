@@ -1,5 +1,4 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const http = require('http');
 
 const app = express();
@@ -10,6 +9,96 @@ const LM_STUDIO_PORT = 41343;
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
+});
+
+// Función para hacer petición a LM Studio
+function proxyToLMStudio(path, method = 'GET', body = null) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: '127.0.0.1',
+            port: LM_STUDIO_PORT,
+            path: path,
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    const jsonData = JSON.parse(data);
+                    resolve({ success: true, data: jsonData, status: res.statusCode });
+                } catch (e) {
+                    resolve({ success: true, data: data, status: res.statusCode });
+                }
+            });
+        });
+
+        req.on('error', (err) => {
+            reject(err);
+        });
+
+        if (body) {
+            req.write(JSON.stringify(body));
+        }
+        req.end();
+    });
+}
+
+// Endpoint directo para /v1/models
+app.get('/v1/models', async (req, res) => {
+    console.log('📡 Handling /v1/models request');
+    
+    try {
+        const result = await proxyToLMStudio('/v1/models');
+        if (result.success) {
+            console.log('✅ Got response from LM Studio');
+            res.status(result.status).json(result.data);
+        } else {
+            throw new Error('LM Studio not responding');
+        }
+    } catch (error) {
+        console.log('⚠️ LM Studio not available, returning fallback');
+        res.json({
+            object: "list",
+            data: [
+                {
+                    id: "lmstudio-model",
+                    object: "model",
+                    created: Math.floor(Date.now() / 1000),
+                    owned_by: "lmstudio"
+                }
+            ]
+        });
+    }
+});
+
+// Endpoint directo para /v1/chat/completions
+app.post('/v1/chat/completions', async (req, res) => {
+    console.log('📡 Handling /v1/chat/completions request');
+    
+    try {
+        const result = await proxyToLMStudio('/v1/chat/completions', 'POST', req.body);
+        if (result.success) {
+            console.log('✅ Got response from LM Studio');
+            res.status(result.status).json(result.data);
+        } else {
+            throw new Error('LM Studio not responding');
+        }
+    } catch (error) {
+        console.log('⚠️ LM Studio not available for chat');
+        res.status(503).json({
+            error: {
+                message: "LM Studio is starting up, please wait...",
+                type: "service_unavailable"
+            }
+        });
+    }
 });
 
 // Función simple para verificar si LM Studio está disponible
@@ -35,41 +124,6 @@ async function checkLMStudio() {
     });
 }
 
-// Proxy simple para todas las rutas /v1
-app.use('/v1', createProxyMiddleware({
-    target: `http://127.0.0.1:${LM_STUDIO_PORT}`,
-    changeOrigin: true,
-    timeout: 10000,
-    onError: (err, req, res) => {
-        console.log(`❌ Proxy error: ${err.message}`);
-        
-        // Respuesta simple cuando LM Studio no está disponible
-        if (req.url === '/models') {
-            res.json({
-                object: "list",
-                data: [
-                    {
-                        id: "lmstudio-model",
-                        object: "model",
-                        created: Math.floor(Date.now() / 1000),
-                        owned_by: "lmstudio"
-                    }
-                ]
-            });
-        } else {
-            res.status(503).json({
-                error: {
-                    message: "LM Studio is starting up, please wait...",
-                    type: "service_unavailable"
-                }
-            });
-        }
-    },
-    onProxyReq: (proxyReq, req, res) => {
-        console.log(`📡 Proxying to LM Studio: ${req.method} ${req.url}`);
-    }
-}));
-
 // Health check simple
 app.get('/health', async (req, res) => {
     const isAvailable = await checkLMStudio();
@@ -77,7 +131,7 @@ app.get('/health', async (req, res) => {
         status: 'ok',
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
-        proxy_version: '4.0.0',
+        proxy_version: '4.1.0',
         timestamp: new Date().toISOString()
     });
 });
@@ -86,7 +140,7 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '4.0.0',
+        version: '4.1.0',
         status: 'running',
         endpoints: ['/v1/models', '/v1/chat/completions', '/health']
     });
@@ -94,8 +148,8 @@ app.get('/', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 LM Studio API Proxy v4.0 running on port ${PORT}`);
-    console.log(`📡 Proxying to LM Studio on port ${LM_STUDIO_PORT}`);
+    console.log(`🚀 LM Studio API Proxy v4.1 running on port ${PORT}`);
+    console.log(`📡 Direct proxy to LM Studio on port ${LM_STUDIO_PORT}`);
     console.log(`🌐 Available at: http://0.0.0.0:${PORT}`);
     console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
 });

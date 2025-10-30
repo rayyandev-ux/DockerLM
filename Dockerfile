@@ -45,7 +45,7 @@ RUN apt-get install -y \
 
 # Audio y utilidades
 RUN apt-get install -y \
-    libasound2 \
+    libasound2t64 \
     libfontconfig1 \
     libfreetype6 \
     xdg-utils

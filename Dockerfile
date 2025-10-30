@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y \
     libopenblas-dev \
     liblapack-dev \
     gfortran \
+    tigervnc-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario no-root

@@ -23,7 +23,7 @@ echo "📋 API: Verificar logs para puerto actual"
 echo "🔄 Usando ejecutable: ./lm-studio"
 
 # Iniciar LM Studio en modo servidor con configuración específica
-cd /opt/lm-studio
+cd /opt/lm-studio/lm-studio-extracted
 
 # Configurar variables de entorno para evitar crashes
 export DISPLAY=:99
@@ -69,7 +69,7 @@ else
 fi
 
 echo "🚀 Iniciando proxy en puerto 1234..."
-cd /app
+cd /opt
 node proxy-server.js &
 PROXY_PID=$!
 
@@ -84,6 +84,7 @@ while true; do
     # Verificar si LM Studio sigue ejecutándose
     if ! kill -0 $LM_STUDIO_PID 2>/dev/null; then
         echo "⚠️ LM Studio se detuvo, reiniciando..."
+        cd /opt/lm-studio/lm-studio-extracted
         ./lm-studio --no-sandbox --disable-dev-shm-usage --server --host 0.0.0.0 --port 41343 &
         LM_STUDIO_PID=$!
     fi
@@ -91,7 +92,7 @@ while true; do
     # Verificar si el proxy sigue ejecutándose
     if ! kill -0 $PROXY_PID 2>/dev/null; then
         echo "⚠️ Proxy se detuvo, reiniciando..."
-        cd /app
+        cd /opt
         node proxy-server.js &
         PROXY_PID=$!
     fi

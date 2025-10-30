@@ -72,32 +72,26 @@ app.get('/v1/test', (req, res) => {
     });
 });
 
-// Endpoint directo para /v1/models
-app.get('/v1/models', async (req, res) => {
-    console.log('📡 Handling /v1/models request');
+// Endpoint directo para /v1/models (versión simplificada para debug)
+app.get('/v1/models', (req, res) => {
+    console.log('📡 Handling /v1/models request - SIMPLE VERSION');
     
-    try {
-        const result = await proxyToLMStudio('/v1/models');
-        if (result.success) {
-            console.log('✅ Got response from LM Studio');
-            res.status(result.status).json(result.data);
-        } else {
-            throw new Error('LM Studio not responding');
+    // Respuesta simple sin async/await para probar
+    res.json({
+        object: "list",
+        data: [
+            {
+                id: "lmstudio-model-simple",
+                object: "model",
+                created: Math.floor(Date.now() / 1000),
+                owned_by: "lmstudio"
+            }
+        ],
+        debug: {
+            message: "Simple version working",
+            version: "4.3.0"
         }
-    } catch (error) {
-        console.log('⚠️ LM Studio not available, returning fallback');
-        res.json({
-            object: "list",
-            data: [
-                {
-                    id: "lmstudio-model",
-                    object: "model",
-                    created: Math.floor(Date.now() / 1000),
-                    owned_by: "lmstudio"
-                }
-            ]
-        });
-    }
+    });
 });
 
 // Endpoint directo para /v1/chat/completions
@@ -153,7 +147,7 @@ app.get('/health', async (req, res) => {
         status: 'ok',
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
-        proxy_version: '4.3.0',
+        proxy_version: '4.4.0',
         timestamp: new Date().toISOString()
     });
 });
@@ -162,7 +156,7 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '4.3.0',
+        version: '4.4.0',
         status: 'running',
         endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test', '/v1/test']
     });

@@ -182,8 +182,8 @@ async function verifyLMStudioAPI(maxRetries = 3, retryDelay = 2000) {
 app.get('/v1/models', async (req, res) => {
     console.log('🔄 Fallback: Verificando LM Studio directamente...');
     
-    // Verificar con reintentos
-    const apiCheck = await verifyLMStudioAPI(3, 2000);
+    // Verificar con reintentos más agresivos
+    const apiCheck = await verifyLMStudioAPI(5, 1000); // 5 intentos, 1 segundo entre intentos
     
     if (apiCheck.success) {
         // Si tenemos datos reales de la API, devolverlos
@@ -200,29 +200,55 @@ app.get('/v1/models', async (req, res) => {
         console.log(`🔄 Puerto actualizado a: ${LM_STUDIO_PORT}`);
         
         // Verificar nuevamente con el nuevo puerto
-        const retryCheck = await verifyLMStudioAPI(2, 1000);
+        const retryCheck = await verifyLMStudioAPI(3, 1000);
         if (retryCheck.success) {
             console.log('✅ Usando datos reales de modelos después de re-detección');
             return res.json(retryCheck.data);
         }
     }
     
-    // Si todo falla, devolver respuesta mock
-    console.log('⚠️ Usando respuesta mock para /v1/models');
-    res.json({
-        object: "list",
-        data: [
-            {
-                id: "lmstudio-local-model",
-                object: "model",
-                created: Math.floor(Date.now() / 1000),
-                owned_by: "lmstudio",
-                description: "Local model running on LM Studio"
-            }
-        ],
-        proxy_info: {
-            message: "Fallback response - LM Studio API not fully available",
-            port_attempted: LM_STUDIO_PORT
+    // Verificar si LM Studio está al menos respondiendo en el puerto base
+    try {
+        const baseCheck = await makeHttpRequest(`http://127.0.0.1:${LM_STUDIO_PORT}/`, 3000);
+        if (baseCheck.ok) {
+            console.log('⚠️ LM Studio responde pero API /v1/models no está lista, devolviendo respuesta temporal');
+            // Devolver respuesta temporal mientras la API se inicializa
+            return res.json({
+                object: "list",
+                data: [
+                    {
+                        id: "lmstudio-initializing",
+                        object: "model",
+                        created: Math.floor(Date.now() / 1000),
+                        owned_by: "lmstudio",
+                        description: "LM Studio is initializing - API will be available shortly"
+                    }
+                ],
+                proxy_info: {
+                    message: "LM Studio is starting up - API endpoints will be available once initialization is complete",
+                    port_detected: LM_STUDIO_PORT,
+                    status: "initializing"
+                }
+            });
+        }
+    } catch (error) {
+        console.log(`❌ Error verificando puerto base: ${error.message}`);
+    }
+    
+    // Si todo falla, devolver respuesta de error más informativa
+    console.log('❌ LM Studio no disponible, devolviendo error');
+    return res.status(503).json({
+        error: {
+            message: 'LM Studio API is not available',
+            type: 'service_unavailable',
+            code: 'lm_studio_not_ready',
+            details: 'LM Studio is detected but the API server is not responding. Please wait a few minutes for initialization to complete.',
+            port_attempted: LM_STUDIO_PORT,
+            suggestions: [
+                'Wait 2-3 minutes for LM Studio to fully initialize',
+                'Check if LM Studio has sufficient resources to start',
+                'Verify that no models are currently loading'
+            ]
         }
     });
 });

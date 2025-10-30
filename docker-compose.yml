@@ -3,46 +3,31 @@ version: '3.8'
 services:
   lmstudio:
     build: .
-    container_name: lmstudio-app
+    container_name: lmstudio-api
     restart: unless-stopped
     
-    # Puertos expuestos
+    # Solo puerto API
     ports:
-      - "1234:1234"   # API de LM Studio
-      - "6080:6080"   # noVNC (interfaz web)
-      - "5900:5900"   # VNC directo
+      - "1234:1234"
     
     # Variables de entorno
     environment:
-      - DISPLAY=:1
-      - VNC_PORT=5900
-      - NOVNC_PORT=6080
-      - LMSTUDIO_PORT=1234
       - LMSTUDIO_HOST=0.0.0.0
+      - LMSTUDIO_PORT=1234
       - LMSTUDIO_MODELS_PATH=/home/lmstudio/models
-      - LMSTUDIO_CACHE_PATH=/home/lmstudio/.cache/lm-studio
     
-    # Volúmenes - ESTOS DEBEN CREARSE MANUALMENTE EN EASYPANEL
+    # Volúmenes para modelos
     volumes:
       - lmstudio_models:/home/lmstudio/models
       - lmstudio_cache:/home/lmstudio/.cache/lm-studio
-      - lmstudio_logs:/home/lmstudio/logs
     
-    # Configuración de recursos (optimizado para CPU)
+    # Recursos optimizados para CPU
     deploy:
       resources:
         limits:
           memory: 8G
         reservations:
           memory: 4G
-    
-    # Configuración de red
-    networks:
-      - lmstudio_network
-    
-    # Configuración de seguridad
-    security_opt:
-      - no-new-privileges:true
     
     # Healthcheck
     healthcheck:
@@ -52,16 +37,9 @@ services:
       retries: 3
       start_period: 60s
 
-# Definición de volúmenes
+# Volúmenes
 volumes:
   lmstudio_models:
     driver: local
   lmstudio_cache:
     driver: local
-  lmstudio_logs:
-    driver: local
-
-# Definición de red
-networks:
-  lmstudio_network:
-    driver: bridge

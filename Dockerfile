@@ -1,119 +1,64 @@
-# Dockerfile para LM Studio - Optimizado para CPU
+# Dockerfile simplificado para LM Studio - Solo API/Servidor
 FROM ubuntu:24.04
 
-# Evitar prompts interactivos durante la instalación
+# Evitar prompts interactivos
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-# Instalar dependencias del sistema en pasos separados
-RUN apt-get update
-
-# Instalar paquetes básicos del sistema
-RUN apt-get install -y \
+# Instalar solo dependencias esenciales
+RUN apt-get update && apt-get install -y \
     curl \
     wget \
-    gnupg2 \
-    software-properties-common \
-    apt-transport-https \
     ca-certificates \
-    lsb-release
+    libnss3 \
+    libgconf-2-4 \
+    libxss1 \
+    libasound2 \
+    libxtst6 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libatk1.0-0 \
+    libcairo-gobject2 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar herramientas de desarrollo
-RUN apt-get install -y \
-    python3 \
-    python3-pip \
-    git \
-    build-essential \
-    cmake \
-    pkg-config
+# Crear usuario
+RUN useradd -m -s /bin/bash lmstudio
 
-# Instalar librerías de desarrollo
-RUN apt-get install -y \
-    libssl-dev \
-    libffi-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    zlib1g-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libwebp-dev \
-    libopenblas-dev \
-    liblapack-dev \
-    gfortran
-
-# Instalar componentes gráficos y VNC
-RUN apt-get install -y \
-    xvfb \
-    x11vnc \
-    fluxbox \
-    supervisor
-
-# Instalar noVNC y websockify
-RUN apt-get install -y \
-    novnc \
-    websockify
-
-# Instalar dependencias adicionales para LM Studio
-RUN apt-get install -y \
-    libnss3
-
-# Limpiar cache
-RUN rm -rf /var/lib/apt/lists/*
-
-# Crear usuario no-root
-RUN useradd -m -s /bin/bash lmstudio && \
-    echo "lmstudio:lmstudio" | chpasswd && \
-    usermod -aG sudo lmstudio
-
-# Crear directorios necesarios
-RUN mkdir -p /home/lmstudio/.cache/lm-studio \
-    /home/lmstudio/models \
+# Crear directorios
+RUN mkdir -p /home/lmstudio/models \
+    /home/lmstudio/.cache/lm-studio \
     /home/lmstudio/logs \
-    /opt/lm-studio \
-    /var/log/supervisor
+    /opt/lm-studio
 
-# Descargar e instalar LM Studio (URL actualizada)
+# Descargar LM Studio
 WORKDIR /opt/lm-studio
 RUN wget -O lmstudio.AppImage "https://installers.lmstudio.ai/linux/x64/0.3.15-11/LM-Studio-0.3.15-11-x64.AppImage" && \
     chmod +x lmstudio.AppImage && \
     ./lmstudio.AppImage --appimage-extract && \
     mv squashfs-root lm-studio-extracted && \
-    chmod +x /opt/lm-studio/lm-studio-extracted/AppRun && \
-    ln -sf /opt/lm-studio/lm-studio-extracted/AppRun /usr/local/bin/lmstudio
+    chmod +x /opt/lm-studio/lm-studio-extracted/AppRun
 
-# Configurar VNC y noVNC
-RUN mkdir -p /home/lmstudio/.vnc && \
-    echo "lmstudio" > /home/lmstudio/.vnc/passwd && \
-    chmod 600 /home/lmstudio/.vnc/passwd
-
-# Configurar supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Script de inicio
+# Script de inicio simple
 COPY start.sh /usr/local/bin/start.sh
-COPY start-lmstudio.sh /usr/local/bin/start-lmstudio.sh
-RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/start-lmstudio.sh
+RUN chmod +x /usr/local/bin/start.sh
 
-# Cambiar propietario de archivos
-RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio && \
-    chown lmstudio:lmstudio /usr/local/bin/start-lmstudio.sh && \
-    chmod +x /usr/local/bin/start-lmstudio.sh
+# Cambiar propietario
+RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio
 
-# Exponer puertos
-EXPOSE 1234 6080 5900
+# Exponer solo puerto API
+EXPOSE 1234
 
 # Variables de entorno
-ENV DISPLAY=:1
-ENV VNC_PORT=5900
-ENV NOVNC_PORT=6080
-ENV LMSTUDIO_PORT=1234
 ENV LMSTUDIO_HOST=0.0.0.0
+ENV LMSTUDIO_PORT=1234
 
 # Volúmenes
-VOLUME ["/home/lmstudio/models", "/home/lmstudio/.cache/lm-studio", "/home/lmstudio/logs"]
+VOLUME ["/home/lmstudio/models", "/home/lmstudio/.cache/lm-studio"]
 
-# Usuario por defecto
+# Usuario
 USER lmstudio
 WORKDIR /home/lmstudio
 

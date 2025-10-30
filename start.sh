@@ -1,43 +1,37 @@
 #!/bin/bash
 
-# Script de inicio para LM Studio en Docker
-echo "Iniciando LM Studio en Docker..."
+echo "🚀 Iniciando LM Studio en modo servidor..."
 
 # Crear directorios si no existen
-mkdir -p /home/lmstudio/.cache/lm-studio
 mkdir -p /home/lmstudio/models
+mkdir -p /home/lmstudio/.cache/lm-studio
 mkdir -p /home/lmstudio/logs
 
-# Configurar permisos
-chmod 755 /home/lmstudio/.cache/lm-studio
-chmod 755 /home/lmstudio/models
-chmod 755 /home/lmstudio/logs
-
-# Configurar variables de entorno
-export DISPLAY=:1
+# Variables de entorno
+export LMSTUDIO_HOST=0.0.0.0
+export LMSTUDIO_PORT=1234
 export LMSTUDIO_MODELS_PATH=/home/lmstudio/models
-export LMSTUDIO_CACHE_PATH=/home/lmstudio/.cache/lm-studio
 
-# Esperar un momento para que el sistema se estabilice
-sleep 2
-
-# Verificar si LM Studio está disponible
+# Verificar instalación
 if [ ! -f "/opt/lm-studio/lm-studio-extracted/AppRun" ]; then
-    echo "Error: LM Studio no encontrado. Verificando instalación..."
-    ls -la /opt/lm-studio/
+    echo "❌ Error: LM Studio no encontrado"
+    exit 1
 fi
 
-# Configurar VNC password si no existe
-if [ ! -f "/home/lmstudio/.vnc/passwd" ]; then
-    mkdir -p /home/lmstudio/.vnc
-    echo "lmstudio" > /home/lmstudio/.vnc/passwd
-    chmod 600 /home/lmstudio/.vnc/passwd
-fi
+echo "✅ LM Studio encontrado"
+echo "📂 Modelos: /home/lmstudio/models"
+echo "🌐 Servidor: http://0.0.0.0:1234"
+echo "📋 API: http://0.0.0.0:1234/v1/models"
 
-# Limpiar archivos de bloqueo previos
-rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
+# Cambiar al directorio de LM Studio
+cd /opt/lm-studio/lm-studio-extracted
 
-echo "Configuración completada. Iniciando servicios..."
-
-# Iniciar supervisor con configuración específica para usuario no-root
-exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf
+# Ejecutar LM Studio en modo servidor
+echo "🔄 Iniciando servidor LM Studio..."
+exec ./AppRun \
+    --no-sandbox \
+    --disable-gpu \
+    --disable-dev-shm-usage \
+    --headless \
+    --host 0.0.0.0 \
+    --port 1234

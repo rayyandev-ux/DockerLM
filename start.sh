@@ -16,6 +16,8 @@ export DBUS_SESSION_BUS_ADDRESS=""
 export XDG_RUNTIME_DIR=/tmp
 export ELECTRON_DISABLE_SANDBOX=1
 export ELECTRON_DISABLE_GPU=1
+export LMS_SERVER_PORT=1234
+export LMS_HOST=0.0.0.0
 
 # Verificar instalación
 if [ ! -d "/opt/lm-studio/lm-studio-extracted" ]; then

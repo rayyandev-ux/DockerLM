@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias GUI por separado (si están disponibles)
+# Instalar dependencias GUI completas para Electron/LM Studio
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libxss1 \
@@ -21,7 +21,43 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libgobject-2.0-0 \
     libdbus-1-3 \
-    || true && rm -rf /var/lib/apt/lists/*
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcairo2 \
+    libcairo-gobject2 \
+    libgdk-pixbuf2.0-0 \
+    libgtk-3-0 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrender1 \
+    libx11-6 \
+    libxext6 \
+    libxcb1 \
+    libxi6 \
+    libxcursor1 \
+    libxinerama1 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libepoxy0 \
+    libfribidi0 \
+    libharfbuzz0b \
+    libthai0 \
+    libpixman-1-0 \
+    libpng16-16 \
+    libfontconfig1 \
+    libfreetype6 \
+    libxft2 \
+    libasound2 \
+    libpulse0 \
+    libudev1 \
+    libsecret-1-0 \
+    libnotify4 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario
 RUN useradd -m -s /bin/bash lmstudio

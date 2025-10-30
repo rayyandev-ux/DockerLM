@@ -10,11 +10,12 @@ function makeHttpRequest(url, timeout = 5000) {
     return new Promise((resolve, reject) => {
         const urlObj = new URL(url);
         const options = {
-            hostname: urlObj.hostname,
+            hostname: urlObj.hostname === 'localhost' ? '127.0.0.1' : urlObj.hostname, // Forzar IPv4
             port: urlObj.port,
             path: urlObj.pathname,
             method: 'GET',
-            timeout: timeout
+            timeout: timeout,
+            family: 4 // Forzar IPv4
         };
 
         const req = http.request(options, (res) => {

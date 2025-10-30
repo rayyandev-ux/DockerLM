@@ -76,4 +76,6 @@ exec $EXECUTABLE \
     --headless \
     --host 0.0.0.0 \
     --port 1234 \
-    --server-port 1234
+    --server-port 1234 \
+    --server \
+    --api

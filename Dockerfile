@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libglib2.0-0 \
     libgobject-2.0-0 \
+    libdbus-1-3 \
     || true && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario

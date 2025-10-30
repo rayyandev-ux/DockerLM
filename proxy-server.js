@@ -1,8 +1,55 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const http = require('http');
 
 const app = express();
 const PORT = 1234;
+
+// Función para hacer peticiones HTTP usando el módulo nativo de Node.js
+function makeHttpRequest(url, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const urlObj = new URL(url);
+        const options = {
+            hostname: urlObj.hostname,
+            port: urlObj.port,
+            path: urlObj.pathname,
+            method: 'GET',
+            timeout: timeout
+        };
+
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                resolve({
+                    ok: res.statusCode >= 200 && res.statusCode < 300,
+                    status: res.statusCode,
+                    statusText: res.statusMessage,
+                    json: () => {
+                        try {
+                            return Promise.resolve(JSON.parse(data));
+                        } catch (e) {
+                            return Promise.resolve({});
+                        }
+                    }
+                });
+            });
+        });
+
+        req.on('error', (err) => {
+            reject(err);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
+        });
+
+        req.end();
+    });
+}
 
 // Función para detectar automáticamente el puerto de LM Studio
 async function detectLMStudioPort() {
@@ -11,11 +58,7 @@ async function detectLMStudioPort() {
     for (const port of possiblePorts) {
         try {
             // Intentar verificar la API específicamente con /v1/models
-            const response = await fetch(`http://localhost:${port}/v1/models`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                signal: AbortSignal.timeout(5000) // Timeout de 5 segundos
-            });
+            const response = await makeHttpRequest(`http://localhost:${port}/v1/models`, 5000);
             
             if (response.ok) {
                 console.log(`✅ LM Studio API detectada en puerto: ${port}`);
@@ -23,16 +66,14 @@ async function detectLMStudioPort() {
             }
             
             // Si /v1/models falla, intentar con la raíz
-            const rootResponse = await fetch(`http://localhost:${port}/`, {
-                signal: AbortSignal.timeout(3000)
-            });
+            const rootResponse = await makeHttpRequest(`http://localhost:${port}/`, 3000);
             
             if (rootResponse.ok || rootResponse.status === 404) {
                 console.log(`🔍 LM Studio detectado en puerto: ${port} (respuesta raíz)`);
                 return port;
             }
         } catch (error) {
-            console.log(`⚠️ Puerto ${port} no disponible: ${error.name}`);
+            console.log(`⚠️ Puerto ${port} no disponible: ${error.message}`);
             // Puerto no disponible, continuar
         }
     }
@@ -55,11 +96,7 @@ app.use((req, res, next) => {
 async function checkLMStudio() {
     try {
         // Intentar primero con /v1/models para verificar la API
-        const apiResponse = await fetch(`http://localhost:${LM_STUDIO_PORT}/v1/models`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(5000) // Timeout de 5 segundos
-        });
+        const apiResponse = await makeHttpRequest(`http://localhost:${LM_STUDIO_PORT}/v1/models`, 5000);
         
         if (apiResponse.ok) {
             LM_STUDIO_READY = true;
@@ -68,9 +105,7 @@ async function checkLMStudio() {
         }
         
         // Si la API no responde, verificar si al menos el servidor está activo
-        const rootResponse = await fetch(`http://localhost:${LM_STUDIO_PORT}/`, {
-            signal: AbortSignal.timeout(3000)
-        });
+        const rootResponse = await makeHttpRequest(`http://localhost:${LM_STUDIO_PORT}/`, 3000);
         
         if (rootResponse.ok || rootResponse.status === 404) {
             console.log(`⚠️ LM Studio detectado en puerto ${LM_STUDIO_PORT} pero API no responde`);
@@ -79,7 +114,7 @@ async function checkLMStudio() {
         
         return false;
     } catch (error) {
-        console.log(`❌ Error al verificar LM Studio: ${error.name}`);
+        console.log(`❌ Error al verificar LM Studio: ${error.message}`);
         return false;
     }
 }
@@ -116,20 +151,17 @@ async function verifyLMStudioAPI(maxRetries = 3, retryDelay = 2000) {
         try {
             console.log(`🔄 Intento ${i+1}/${maxRetries} de verificar API en puerto ${LM_STUDIO_PORT}`);
             
-            const response = await fetch(`http://localhost:${LM_STUDIO_PORT}/v1/models`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                signal: AbortSignal.timeout(5000)
-            });
+            const response = await makeHttpRequest(`http://localhost:${LM_STUDIO_PORT}/v1/models`, 5000);
             
             if (response.ok) {
                 console.log(`✅ API verificada correctamente en intento ${i+1}`);
-                return { success: true, data: await response.json() };
+                const data = await response.json();
+                return { success: true, data: data };
             } else {
                 console.log(`⚠️ API respondió con estado ${response.status} en intento ${i+1}`);
             }
         } catch (error) {
-            console.log(`⚠️ Error en intento ${i+1}: ${error.name}`);
+            console.log(`⚠️ Error en intento ${i+1}: ${error.message}`);
         }
         
         if (i < maxRetries - 1) {

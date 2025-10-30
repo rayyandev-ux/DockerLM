@@ -7,10 +7,15 @@ mkdir -p /home/lmstudio/models
 mkdir -p /home/lmstudio/.cache/lm-studio
 mkdir -p /home/lmstudio/logs
 
-# Variables de entorno
+# Variables de entorno para suprimir errores de GUI
 export LMSTUDIO_HOST=0.0.0.0
 export LMSTUDIO_PORT=1234
 export LMSTUDIO_MODELS_PATH=/home/lmstudio/models
+export DISPLAY=:99
+export DBUS_SESSION_BUS_ADDRESS=""
+export XDG_RUNTIME_DIR=/tmp
+export ELECTRON_DISABLE_SANDBOX=1
+export ELECTRON_DISABLE_GPU=1
 
 # Verificar instalación
 if [ ! -d "/opt/lm-studio/lm-studio-extracted" ]; then
@@ -46,12 +51,19 @@ fi
 
 echo "🔄 Usando ejecutable: $EXECUTABLE"
 
-# Ejecutar LM Studio en modo servidor
+# Ejecutar LM Studio en modo servidor (redirigir errores de GUI)
 echo "🔄 Iniciando servidor LM Studio..."
 exec $EXECUTABLE \
     --no-sandbox \
     --disable-gpu \
     --disable-dev-shm-usage \
+    --disable-software-rasterizer \
+    --disable-background-timer-throttling \
+    --disable-backgrounding-occluded-windows \
+    --disable-renderer-backgrounding \
+    --disable-features=TranslateUI \
+    --disable-ipc-flooding-protection \
     --headless \
     --host 0.0.0.0 \
-    --port 1234
+    --port 1234 \
+    2>/dev/null

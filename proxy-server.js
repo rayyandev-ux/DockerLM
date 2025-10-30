@@ -5,6 +5,10 @@ const app = express();
 const PORT = 1234;
 const LM_STUDIO_PORT = 41343;
 
+// Middleware esencial
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Middleware para logs
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -49,6 +53,15 @@ function proxyToLMStudio(path, method = 'GET', body = null) {
         req.end();
     });
 }
+
+// Endpoint de prueba simple
+app.get('/test', (req, res) => {
+    res.json({
+        message: 'Test endpoint working',
+        version: '4.1.0',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Endpoint directo para /v1/models
 app.get('/v1/models', async (req, res) => {
@@ -131,7 +144,7 @@ app.get('/health', async (req, res) => {
         status: 'ok',
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
-        proxy_version: '4.1.0',
+        proxy_version: '4.2.0',
         timestamp: new Date().toISOString()
     });
 });
@@ -140,16 +153,17 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '4.1.0',
+        version: '4.2.0',
         status: 'running',
-        endpoints: ['/v1/models', '/v1/chat/completions', '/health']
+        endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test']
     });
 });
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 LM Studio API Proxy v4.1 running on port ${PORT}`);
+    console.log(`🚀 LM Studio API Proxy v4.2 running on port ${PORT}`);
     console.log(`📡 Direct proxy to LM Studio on port ${LM_STUDIO_PORT}`);
     console.log(`🌐 Available at: http://0.0.0.0:${PORT}`);
     console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
+    console.log(`🧪 Test endpoint: http://0.0.0.0:${PORT}/test`);
 });

@@ -123,7 +123,8 @@ echo "🔄 LM Studio iniciado con PID: $LM_PID"
 
 # Esperar a que LM Studio esté completamente listo
 echo "⏳ Esperando a que LM Studio inicie completamente..."
-sleep 45
+echo "⏳ Esto puede tomar hasta 2 minutos..."
+sleep 90  # Aumentado a 90 segundos
 
 # Verificar que el proceso sigue vivo
 if ! kill -0 $LM_PID 2>/dev/null; then

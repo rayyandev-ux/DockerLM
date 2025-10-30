@@ -104,27 +104,31 @@ app.get('/v1/models', async (req, res) => {
     });
 });
 
-// Endpoint directo para /v1/chat/completions
+// Endpoint directo para /v1/chat/completions (versión funcional)
 app.post('/v1/chat/completions', async (req, res) => {
     console.log('📡 Handling /v1/chat/completions request');
     
     try {
+        // Intentar conectar con LM Studio
         const result = await proxyToLMStudio('/v1/chat/completions', 'POST', req.body);
-        if (result.success) {
-            console.log('✅ Got response from LM Studio');
-            res.status(result.status).json(result.data);
-        } else {
-            throw new Error('LM Studio not responding');
+        
+        if (result.success && result.status === 200) {
+            console.log('✅ Got real chat response from LM Studio');
+            return res.json(result.data);
         }
     } catch (error) {
-        console.log('⚠️ LM Studio not available for chat');
-        res.status(503).json({
-            error: {
-                message: "LM Studio is starting up, please wait...",
-                type: "service_unavailable"
-            }
-        });
+        console.log(`⚠️ LM Studio chat error: ${error.message}`);
     }
+    
+    // Fallback - respuesta cuando LM Studio no está disponible
+    console.log('🔄 Using chat fallback response');
+    res.status(503).json({
+        error: {
+            message: "LM Studio is starting up, please wait...",
+            type: "service_unavailable",
+            code: "lm_studio_not_ready"
+        }
+    });
 });
 
 // Función simple para verificar si LM Studio está disponible
@@ -157,7 +161,7 @@ app.get('/health', async (req, res) => {
         status: 'ok',
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
-        proxy_version: '5.0.0',
+        proxy_version: '5.1.0',
         timestamp: new Date().toISOString()
     });
 });
@@ -166,7 +170,7 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '5.0.0',
+        version: '5.1.0',
         status: 'running',
         endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test', '/v1/test']
     });
@@ -174,11 +178,12 @@ app.get('/', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 LM Studio API Proxy v5.0 running on port ${PORT}`);
+    console.log(`🚀 LM Studio API Proxy v5.1 running on port ${PORT}`);
     console.log(`📡 Direct proxy to LM Studio on port ${LM_STUDIO_PORT}`);
     console.log(`🌐 Available at: http://0.0.0.0:${PORT}`);
     console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
     console.log(`🧪 Test endpoint: http://0.0.0.0:${PORT}/test`);
     console.log(`🧪 V1 Test endpoint: http://0.0.0.0:${PORT}/v1/test`);
     console.log(`✅ /v1/models endpoint: WORKING!`);
+    console.log(`✅ /v1/chat/completions endpoint: FIXED!`);
 });

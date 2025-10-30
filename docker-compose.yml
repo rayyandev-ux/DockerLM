@@ -9,12 +9,14 @@ services:
     # Solo puerto API
     ports:
       - "1234:1234"
+      - "41343:41343"
     
     # Variables de entorno
     environment:
       - LMSTUDIO_HOST=0.0.0.0
       - LMSTUDIO_PORT=1234
       - LMSTUDIO_MODELS_PATH=/home/lmstudio/models
+      - LMSTUDIO_DOMAIN=api-lmstudio.kutyaf.easypanel.host
     
     # Volúmenes para modelos
     volumes:

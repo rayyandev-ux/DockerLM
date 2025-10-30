@@ -19,6 +19,12 @@ export ELECTRON_DISABLE_GPU=1
 export LMS_SERVER_PORT=1234
 export LMS_HOST=0.0.0.0
 
+# Usar dominio si está configurado
+if [ ! -z "$LMSTUDIO_DOMAIN" ]; then
+    echo "🌐 Dominio configurado: https://$LMSTUDIO_DOMAIN"
+    export LMS_DOMAIN=$LMSTUDIO_DOMAIN
+fi
+
 # Verificar instalación
 if [ ! -d "/opt/lm-studio/lm-studio-extracted" ]; then
     echo "❌ Error: LM Studio no encontrado"
@@ -27,8 +33,8 @@ fi
 
 echo "✅ LM Studio encontrado"
 echo "📂 Modelos: /home/lmstudio/models"
-echo "🌐 Servidor: http://0.0.0.0:1234"
-echo "📋 API: http://0.0.0.0:1234/v1/models"
+echo "🌐 Servidor: LM Studio iniciándose..."
+echo "📋 API: Verificar logs para puerto actual"
 
 # Cambiar al directorio de LM Studio
 cd /opt/lm-studio/lm-studio-extracted

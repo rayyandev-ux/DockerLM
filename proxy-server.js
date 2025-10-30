@@ -293,10 +293,11 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '2.0.0',
-        features: ['auto-port-detection', 'intelligent-fallback', 'health-monitoring'],
+        version: '3.0.0',
+        features: ['auto-port-detection', 'intelligent-fallback', 'health-monitoring', 'ipv4-connectivity', 'robust-initialization'],
         endpoints: ['/v1/models', '/v1/chat/completions', '/health'],
-        lm_studio_port: LM_STUDIO_PORT
+        lm_studio_port: LM_STUDIO_PORT,
+        status: LM_STUDIO_READY ? 'ready' : 'initializing'
     });
 });
 

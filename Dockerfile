@@ -39,6 +39,15 @@ RUN apt-get update && apt-get install -y \
     liblapack-dev \
     gfortran \
     tigervnc-common \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libxss1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario no-root
@@ -59,6 +68,7 @@ RUN wget -O lmstudio.AppImage "https://installers.lmstudio.ai/linux/x64/0.3.15-1
     chmod +x lmstudio.AppImage && \
     ./lmstudio.AppImage --appimage-extract && \
     mv squashfs-root lm-studio-extracted && \
+    chmod +x /opt/lm-studio/lm-studio-extracted/AppRun && \
     ln -sf /opt/lm-studio/lm-studio-extracted/AppRun /usr/local/bin/lmstudio
 
 # Configurar VNC y noVNC

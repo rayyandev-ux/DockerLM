@@ -58,6 +58,18 @@ echo "🖥️ Iniciando display virtual..."
 Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
 export DISPLAY=:99
 
+# Crear archivo de configuración para forzar puerto 1234
+mkdir -p /home/lmstudio/.config/LM\ Studio
+cat > "/home/lmstudio/.config/LM Studio/settings.json" << 'EOF'
+{
+  "server": {
+    "port": 1234,
+    "host": "0.0.0.0",
+    "autoStart": true
+  }
+}
+EOF
+
 # Esperar a que Xvfb se inicie
 sleep 2
 

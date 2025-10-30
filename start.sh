@@ -30,7 +30,7 @@ fi
 # Configurar VNC password si no existe
 if [ ! -f "/home/lmstudio/.vnc/passwd" ]; then
     mkdir -p /home/lmstudio/.vnc
-    echo "lmstudio" | vncpasswd -f > /home/lmstudio/.vnc/passwd
+    echo "lmstudio" > /home/lmstudio/.vnc/passwd
     chmod 600 /home/lmstudio/.vnc/passwd
 fi
 
@@ -39,5 +39,5 @@ rm -f /tmp/.X1-lock /tmp/.X11-unix/X1
 
 echo "Configuración completada. Iniciando servicios..."
 
-# Iniciar supervisor
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+# Iniciar supervisor con configuración específica para usuario no-root
+exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf

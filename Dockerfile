@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
     xvfb \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar dependencias GUI esenciales (paso a paso para evitar errores)
@@ -71,9 +73,16 @@ RUN wget -O lmstudio.AppImage "https://installers.lmstudio.ai/linux/x64/0.3.15-1
     mv squashfs-root lm-studio-extracted && \
     chmod +x /opt/lm-studio/lm-studio-extracted/AppRun
 
-# Script de inicio simple
-COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+# Copiar archivos de configuración
+COPY start.sh /opt/start.sh
+COPY package.json /opt/package.json
+COPY proxy-server.js /opt/proxy-server.js
+
+# Instalar dependencias de Node.js
+RUN cd /opt && npm install
+
+# Hacer ejecutable el script de inicio
+RUN chmod +x /opt/start.sh
 
 # Cambiar propietario
 RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio
@@ -93,4 +102,4 @@ USER lmstudio
 WORKDIR /home/lmstudio
 
 # Comando de inicio
-CMD ["/usr/local/bin/start.sh"]
+CMD ["/opt/start.sh"]

@@ -98,7 +98,7 @@ sleep 2
 
 # Ejecutar LM Studio en modo servidor con display virtual
 echo "🔄 Iniciando servidor LM Studio con display virtual..."
-exec $EXECUTABLE \
+$EXECUTABLE \
     --no-sandbox \
     --disable-gpu \
     --disable-dev-shm-usage \
@@ -110,7 +110,39 @@ exec $EXECUTABLE \
     --disable-ipc-flooding-protection \
     --headless \
     --host 0.0.0.0 \
-    --port 1234 \
-    --server-port 1234 \
+    --port 41343 \
+    --server-port 41343 \
     --server \
-    --api
+    --api &
+
+LM_PID=$!
+echo "🔄 LM Studio iniciado con PID: $LM_PID"
+
+# Esperar a que LM Studio esté listo
+echo "⏳ Esperando a que LM Studio inicie..."
+sleep 10
+
+# Iniciar el servidor proxy
+echo "🚀 Iniciando servidor proxy en puerto 1234..."
+cd /opt
+node proxy-server.js &
+
+PROXY_PID=$!
+echo "🔄 Proxy iniciado con PID: $PROXY_PID"
+
+# Mantener ambos procesos vivos
+echo "✅ Sistema listo - LM Studio (puerto 41343) + Proxy (puerto 1234)"
+echo "🌐 API disponible en: http://0.0.0.0:1234/v1/models"
+
+# Función para limpiar procesos al salir
+cleanup() {
+    echo "🛑 Deteniendo servicios..."
+    kill $PROXY_PID 2>/dev/null
+    kill $LM_PID 2>/dev/null
+    exit 0
+}
+
+trap cleanup SIGTERM SIGINT
+
+# Esperar a que los procesos terminen
+wait

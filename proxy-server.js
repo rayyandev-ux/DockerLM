@@ -122,7 +122,7 @@ async function checkLMStudio() {
 
 // Proxy dinámico para la API OpenAI
 app.use('/v1', createProxyMiddleware({
-    target: () => `http://localhost:${LM_STUDIO_PORT}`,
+    target: `http://127.0.0.1:${LM_STUDIO_PORT}`, // URL fija en lugar de función
     changeOrigin: true,
     timeout: 30000,
     proxyTimeout: 30000,
@@ -143,6 +143,10 @@ app.use('/v1', createProxyMiddleware({
     },
     onProxyRes: (proxyRes, req, res) => {
         console.log(`✅ Response from LM Studio: ${proxyRes.statusCode}`);
+    },
+    router: (req) => {
+        // Actualizar dinámicamente el target si el puerto cambió
+        return `http://127.0.0.1:${LM_STUDIO_PORT}`;
     }
 }));
 

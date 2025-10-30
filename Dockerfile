@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     libxrandr2 \
+    libglib2.0-0 \
+    libgobject-2.0-0 \
     || true && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario

@@ -157,12 +157,24 @@ async function checkLMStudio() {
 // Health check simple
 app.get('/health', async (req, res) => {
     const isAvailable = await checkLMStudio();
+    
+    // Verificar si hay modelos disponibles
+    let hasModels = false;
+    try {
+        const result = await proxyToLMStudio('/v1/models');
+        hasModels = result.success && result.data && result.data.data && result.data.data.length > 0;
+    } catch (error) {
+        // Ignorar errores
+    }
+    
     res.json({
         status: 'ok',
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
-        proxy_version: '5.1.0',
-        timestamp: new Date().toISOString()
+        lm_studio_has_models: hasModels,
+        proxy_version: '5.2.0',
+        timestamp: new Date().toISOString(),
+        message: hasModels ? 'Ready for chat' : 'LM Studio starting or no models loaded'
     });
 });
 
@@ -170,15 +182,16 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '5.1.0',
+        version: '5.2.0',
         status: 'running',
-        endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test', '/v1/test']
+        endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test', '/v1/test'],
+        info: 'Proxy with automatic model download and improved stability'
     });
 });
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 LM Studio API Proxy v5.1 running on port ${PORT}`);
+    console.log(`🚀 LM Studio API Proxy v5.2 running on port ${PORT}`);
     console.log(`📡 Direct proxy to LM Studio on port ${LM_STUDIO_PORT}`);
     console.log(`🌐 Available at: http://0.0.0.0:${PORT}`);
     console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
@@ -186,4 +199,5 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🧪 V1 Test endpoint: http://0.0.0.0:${PORT}/v1/test`);
     console.log(`✅ /v1/models endpoint: WORKING!`);
     console.log(`✅ /v1/chat/completions endpoint: FIXED!`);
+    console.log(`🤖 Auto-download: TinyLlama model if no models found`);
 });

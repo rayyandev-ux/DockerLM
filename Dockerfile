@@ -63,7 +63,7 @@ RUN wget -O lmstudio.AppImage "https://installers.lmstudio.ai/linux/x64/0.3.15-1
 
 # Configurar VNC y noVNC
 RUN mkdir -p /home/lmstudio/.vnc && \
-    echo "lmstudio" | vncpasswd -f > /home/lmstudio/.vnc/passwd && \
+    echo "lmstudio" > /home/lmstudio/.vnc/passwd && \
     chmod 600 /home/lmstudio/.vnc/passwd
 
 # Configurar supervisor

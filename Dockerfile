@@ -56,8 +56,7 @@ RUN apt-get install -y \
 
 # Instalar dependencias adicionales para LM Studio
 RUN apt-get install -y \
-    libnss3 \
-    libasound2
+    libnss3
 
 # Limpiar cache
 RUN rm -rf /var/lib/apt/lists/*

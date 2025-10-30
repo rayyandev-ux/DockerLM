@@ -96,7 +96,9 @@ COPY start-lmstudio.sh /usr/local/bin/start-lmstudio.sh
 RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/start-lmstudio.sh
 
 # Cambiar propietario de archivos
-RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio
+RUN chown -R lmstudio:lmstudio /home/lmstudio /opt/lm-studio && \
+    chown lmstudio:lmstudio /usr/local/bin/start-lmstudio.sh && \
+    chmod +x /usr/local/bin/start-lmstudio.sh
 
 # Exponer puertos
 EXPOSE 1234 6080 5900

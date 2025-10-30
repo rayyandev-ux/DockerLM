@@ -52,9 +52,9 @@ RUN mkdir -p /home/lmstudio/.cache/lm-studio \
     /opt/lm-studio \
     /var/log/supervisor
 
-# Descargar e instalar LM Studio
+# Descargar e instalar LM Studio (URL actualizada)
 WORKDIR /opt/lm-studio
-RUN wget -O lmstudio.AppImage "https://releases.lmstudio.ai/linux/x86/0.2.29/LM_Studio-0.2.29.AppImage" && \
+RUN wget -O lmstudio.AppImage "https://installers.lmstudio.ai/linux/x64/0.3.15-11/LM-Studio-0.3.15-11-x64.AppImage" && \
     chmod +x lmstudio.AppImage && \
     ./lmstudio.AppImage --appimage-extract && \
     mv squashfs-root lm-studio-extracted && \

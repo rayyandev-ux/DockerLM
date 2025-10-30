@@ -78,6 +78,11 @@ cat > "/home/lmstudio/.config/LM Studio/settings.json" << 'EOF'
     "enabled": true,
     "port": 1234,
     "host": "0.0.0.0"
+  },
+  "httpServer": {
+    "port": 1234,
+    "host": "0.0.0.0",
+    "enabled": true
   }
 }
 EOF
@@ -93,48 +98,68 @@ cat > "/home/lmstudio/.cache/lm-studio/.internal/http-server-config.json" << 'EO
 }
 EOF
 
+# Variables de entorno específicas para forzar puerto
+export LMS_SERVER_PORT=1234
+export LMS_HOST=0.0.0.0
+export LMS_API_PORT=1234
+export LMSTUDIO_SERVER_PORT=1234
+export LMSTUDIO_API_PORT=1234
+
 # Esperar a que Xvfb se inicie
 sleep 2
 
-# Ejecutar LM Studio en modo servidor con display virtual
-echo "🔄 Iniciando servidor LM Studio con display virtual..."
+# Ejecutar LM Studio DIRECTAMENTE en puerto 1234
+echo "🔄 Iniciando LM Studio DIRECTAMENTE en puerto 1234..."
+
+# Forzar puerto 1234 con todos los flags posibles
 $EXECUTABLE \
     --no-sandbox \
     --disable-gpu \
     --disable-dev-shm-usage \
-    --disable-software-rasterizer \
-    --disable-background-timer-throttling \
-    --disable-backgrounding-occluded-windows \
-    --disable-renderer-backgrounding \
-    --disable-features=TranslateUI \
-    --disable-ipc-flooding-protection \
     --headless \
     --host 0.0.0.0 \
-    --port 41343 \
-    --server-port 41343 \
+    --port 1234 \
+    --server-port 1234 \
+    --api-port 1234 \
+    --http-port 1234 \
     --server \
-    --api &
+    --api \
+    --enable-server \
+    --enable-api &
 
 LM_PID=$!
-echo "🔄 LM Studio iniciado con PID: $LM_PID"
+echo "🔄 LM Studio iniciado DIRECTAMENTE en puerto 1234 (PID: $LM_PID)"
 
-# Esperar en background y luego iniciar proxy
-(
-    # Esperar a que LM Studio esté listo
-    echo "⏳ Esperando a que LM Studio inicie..."
+# Esperar y verificar
+echo "⏳ Esperando a que LM Studio inicie en puerto 1234..."
+sleep 60
+
+# Verificar que el proceso sigue vivo
+if ! kill -0 $LM_PID 2>/dev/null; then
+    echo "❌ LM Studio se detuvo inesperadamente"
+    echo "🔍 Verificando logs..."
+    ps aux | grep lm-studio || echo "❌ Proceso no encontrado"
+else
+    echo "✅ LM Studio ejecutándose en puerto 1234 (PID: $LM_PID)"
+fi
+
+# Verificar conectividad directa
+echo "🔍 Verificando conectividad en puerto 1234..."
+if curl -s http://localhost:1234/ >/dev/null 2>&1; then
+    echo "✅ LM Studio respondiendo en puerto 1234"
+else
+    echo "⚠️ LM Studio puede estar iniciando aún..."
+fi
+
+echo "✅ Sistema listo - LM Studio DIRECTO en puerto 1234"
+echo "🌐 API disponible en: http://0.0.0.0:1234/v1/models"
+
+# Mantener el contenedor vivo
+while true; do
     sleep 30
-    
-    # Iniciar el servidor proxy
-    echo "🚀 Iniciando servidor proxy en puerto 1234..."
-    cd /opt
-    echo "📋 Iniciando proxy con Node.js..."
-    node proxy-server.js &
-    
-    PROXY_PID=$!
-    echo "🔄 Proxy iniciado con PID: $PROXY_PID"
-    echo "✅ Sistema listo - LM Studio (puerto 41343) + Proxy (puerto 1234)"
-) &
-
-# Mantener el proceso principal vivo
-echo "🌐 Esperando a que los servicios estén listos..."
-wait
+    # Verificar que el proceso sigue vivo
+    if ! kill -0 $LM_PID 2>/dev/null; then
+        echo "❌ LM Studio se detuvo"
+        exit 1
+    fi
+done

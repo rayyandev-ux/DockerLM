@@ -5,24 +5,20 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-# Instalar solo dependencias esenciales
+# Instalar dependencias mínimas
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias GUI por separado (si están disponibles)
+RUN apt-get update && apt-get install -y \
     libnss3 \
-    libgconf-2-4 \
     libxss1 \
-    libasound2 \
     libxtst6 \
     libxrandr2 \
-    libasound2 \
-    libpangocairo-1.0-0 \
-    libatk1.0-0 \
-    libcairo-gobject2 \
-    libgtk-3-0 \
-    libgdk-pixbuf2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+    || true && rm -rf /var/lib/apt/lists/*
 
 # Crear usuario
 RUN useradd -m -s /bin/bash lmstudio

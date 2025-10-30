@@ -51,8 +51,16 @@ fi
 
 echo "🔄 Usando ejecutable: $EXECUTABLE"
 
-# Ejecutar LM Studio en modo servidor (redirigir errores de GUI)
-echo "🔄 Iniciando servidor LM Studio..."
+# Iniciar display virtual para evitar errores de GUI
+echo "🖥️ Iniciando display virtual..."
+Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
+export DISPLAY=:99
+
+# Esperar a que Xvfb se inicie
+sleep 2
+
+# Ejecutar LM Studio en modo servidor con display virtual
+echo "🔄 Iniciando servidor LM Studio con display virtual..."
 exec $EXECUTABLE \
     --no-sandbox \
     --disable-gpu \
@@ -65,5 +73,4 @@ exec $EXECUTABLE \
     --disable-ipc-flooding-protection \
     --headless \
     --host 0.0.0.0 \
-    --port 1234 \
-    2>/dev/null
+    --port 1234

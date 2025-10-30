@@ -5,11 +5,12 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-# Instalar dependencias mínimas
+# Instalar dependencias mínimas (incluyendo curl para healthcheck)
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     ca-certificates \
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar dependencias GUI esenciales (paso a paso para evitar errores)

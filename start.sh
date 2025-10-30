@@ -8,7 +8,7 @@ mkdir -p /home/lmstudio/.cache/lm-studio
 mkdir -p /home/lmstudio/logs
 
 # Variables de entorno para suprimir errores de GUI
-export LMSTUDIO_HOST=0.0.0.0
+export LMSTUDIO_HOST=api-lmstudio.kutyaf.easypanel.host
 export LMSTUDIO_PORT=1234
 export LMSTUDIO_MODELS_PATH=/home/lmstudio/models
 export DISPLAY=:99

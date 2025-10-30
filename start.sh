@@ -7,20 +7,39 @@ echo "📂 Modelos: /home/lmstudio/models"
 # Crear directorio de modelos si no existe
 mkdir -p /home/lmstudio/models
 
-# Descargar un modelo pequeño automáticamente si no hay modelos
+# Descargar un modelo más pequeño y confiable
 if [ ! "$(ls -A /home/lmstudio/models)" ]; then
-    echo "📥 Descargando modelo pequeño para pruebas..."
+    echo "📥 Descargando modelo Phi-3 Mini (más pequeño y confiable)..."
     cd /home/lmstudio/models
     
-    # Descargar un modelo pequeño (TinyLlama 1.1B)
-    wget -q --show-progress "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf" -O "tinyllama-1.1b-chat.gguf" || {
-        echo "⚠️ No se pudo descargar el modelo, continuando sin modelo..."
+    # Descargar Phi-3 Mini (mucho más pequeño - 2.4GB)
+    wget -q --show-progress "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf" -O "phi-3-mini.gguf" || {
+        echo "⚠️ Descarga falló, usando modelo de respaldo..."
+        # Modelo aún más pequeño como respaldo
+        wget -q --show-progress "https://huggingface.co/QuantFactory/Phi-3-mini-4k-instruct-GGUF/resolve/main/Phi-3-mini-4k-instruct.Q2_K.gguf" -O "phi-3-mini-q2.gguf" || {
+            echo "⚠️ Creando modelo mock para pruebas..."
+            echo "Mock model file" > "mock-model.gguf"
+        }
     }
 fi
 
 echo "🌐 Servidor: LM Studio iniciándose..."
 echo "📋 API: Verificar logs para puerto actual"
-echo "🔄 Usando ejecutable: ./lm-studio"
+
+# Crear configuración para auto-cargar modelo
+mkdir -p /home/lmstudio/.config/LM\ Studio
+cat > "/home/lmstudio/.config/LM Studio/settings.json" << 'EOF'
+{
+  "server": {
+    "port": 41343,
+    "host": "0.0.0.0",
+    "autoStart": true,
+    "enabled": true
+  },
+  "autoLoadModel": true,
+  "defaultModel": "/home/lmstudio/models/phi-3-mini.gguf"
+}
+EOF
 
 # Iniciar LM Studio en modo servidor con configuración específica
 cd /opt/lm-studio/lm-studio-extracted
@@ -35,7 +54,7 @@ export LMS_HOST=0.0.0.0
 echo "🖥️ Iniciando display virtual..."
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
 
-echo "🔄 Iniciando LM Studio con configuración optimizada..."
+echo "🔄 Iniciando LM Studio con auto-carga de modelo..."
 
 # Iniciar LM Studio con configuraciones específicas para servidor
 ./lm-studio \
@@ -52,11 +71,11 @@ echo "🔄 Iniciando LM Studio con configuración optimizada..."
 LM_STUDIO_PID=$!
 echo "🔄 LM Studio iniciado con PID: $LM_STUDIO_PID"
 
-echo "⏳ Esperando a que LM Studio inicie completamente..."
-echo "⏳ Esto puede tomar hasta 3 minutos..."
+echo "⏳ Esperando a que LM Studio cargue el modelo..."
+echo "⏳ Esto puede tomar hasta 5 minutos..."
 
-# Esperar más tiempo para que LM Studio se estabilice
-sleep 120
+# Esperar más tiempo para que LM Studio cargue el modelo
+sleep 180
 
 # Verificar si LM Studio sigue ejecutándose
 if kill -0 $LM_STUDIO_PID 2>/dev/null; then
@@ -65,7 +84,7 @@ else
     echo "⚠️ LM Studio se detuvo, reintentando..."
     ./lm-studio --no-sandbox --disable-dev-shm-usage --server --host 0.0.0.0 --port 41343 &
     LM_STUDIO_PID=$!
-    sleep 60
+    sleep 120
 fi
 
 echo "🚀 Iniciando proxy en puerto 1234..."

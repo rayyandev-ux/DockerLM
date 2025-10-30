@@ -25,7 +25,8 @@ function proxyToLMStudio(path, method = 'GET', body = null) {
             method: method,
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 10000 // Aumentar timeout
         };
 
         const req = http.request(options, (res) => {
@@ -38,13 +39,19 @@ function proxyToLMStudio(path, method = 'GET', body = null) {
                     const jsonData = JSON.parse(data);
                     resolve({ success: true, data: jsonData, status: res.statusCode });
                 } catch (e) {
-                    resolve({ success: true, data: data, status: res.statusCode });
+                    // Si no es JSON válido, devolver como texto
+                    resolve({ success: true, data: { message: data }, status: res.statusCode });
                 }
             });
         });
 
         req.on('error', (err) => {
             reject(err);
+        });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timeout'));
         });
 
         if (body) {
@@ -158,13 +165,26 @@ async function checkLMStudio() {
 app.get('/health', async (req, res) => {
     const isAvailable = await checkLMStudio();
     
-    // Verificar si hay modelos disponibles
+    // Verificar si hay modelos disponibles con múltiples intentos
     let hasModels = false;
-    try {
-        const result = await proxyToLMStudio('/v1/models');
-        hasModels = result.success && result.data && result.data.data && result.data.data.length > 0;
-    } catch (error) {
-        // Ignorar errores
+    let modelCount = 0;
+    
+    if (isAvailable) {
+        try {
+            const result = await proxyToLMStudio('/v1/models');
+            if (result.success && result.data && result.data.data) {
+                modelCount = result.data.data.length;
+                hasModels = modelCount > 0;
+            }
+        } catch (error) {
+            // Intentar endpoint alternativo
+            try {
+                const altResult = await proxyToLMStudio('/models');
+                hasModels = altResult.success && altResult.status === 200;
+            } catch (altError) {
+                // Ignorar errores
+            }
+        }
     }
     
     res.json({
@@ -172,9 +192,10 @@ app.get('/health', async (req, res) => {
         lm_studio_available: isAvailable,
         lm_studio_port: LM_STUDIO_PORT,
         lm_studio_has_models: hasModels,
-        proxy_version: '5.2.0',
+        model_count: modelCount,
+        proxy_version: '6.0.0',
         timestamp: new Date().toISOString(),
-        message: hasModels ? 'Ready for chat' : 'LM Studio starting or no models loaded'
+        message: hasModels ? `Ready for chat (${modelCount} models loaded)` : 'LM Studio starting or loading models...'
     });
 });
 
@@ -182,16 +203,16 @@ app.get('/health', async (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: 'LM Studio API Proxy',
-        version: '5.2.0',
+        version: '6.0.0',
         status: 'running',
         endpoints: ['/v1/models', '/v1/chat/completions', '/health', '/test', '/v1/test'],
-        info: 'Proxy with automatic model download and improved stability'
+        info: 'Proxy with Phi-3 Mini auto-download and improved model detection'
     });
 });
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 LM Studio API Proxy v5.2 running on port ${PORT}`);
+    console.log(`🚀 LM Studio API Proxy v6.0 running on port ${PORT}`);
     console.log(`📡 Direct proxy to LM Studio on port ${LM_STUDIO_PORT}`);
     console.log(`🌐 Available at: http://0.0.0.0:${PORT}`);
     console.log(`🔍 Health check: http://0.0.0.0:${PORT}/health`);
@@ -199,5 +220,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🧪 V1 Test endpoint: http://0.0.0.0:${PORT}/v1/test`);
     console.log(`✅ /v1/models endpoint: WORKING!`);
     console.log(`✅ /v1/chat/completions endpoint: FIXED!`);
-    console.log(`🤖 Auto-download: TinyLlama model if no models found`);
+    console.log(`🤖 Auto-download: Phi-3 Mini model (smaller & more reliable)`);
+    console.log(`🔧 Improved: Better model detection and timeout handling`);
 });

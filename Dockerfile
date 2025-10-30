@@ -5,27 +5,30 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-# Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y \
+# Instalar dependencias del sistema en pasos separados
+RUN apt-get update
+
+# Instalar paquetes básicos del sistema
+RUN apt-get install -y \
     curl \
     wget \
     gnupg2 \
     software-properties-common \
     apt-transport-https \
     ca-certificates \
-    lsb-release \
-    xvfb \
-    x11vnc \
-    fluxbox \
-    novnc \
-    websockify \
-    supervisor \
+    lsb-release
+
+# Instalar herramientas de desarrollo
+RUN apt-get install -y \
     python3 \
     python3-pip \
     git \
     build-essential \
     cmake \
-    pkg-config \
+    pkg-config
+
+# Instalar librerías de desarrollo
+RUN apt-get install -y \
     libssl-dev \
     libffi-dev \
     libxml2-dev \
@@ -37,10 +40,27 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     libopenblas-dev \
     liblapack-dev \
-    gfortran \
+    gfortran
+
+# Instalar componentes gráficos y VNC
+RUN apt-get install -y \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    supervisor
+
+# Instalar noVNC y websockify
+RUN apt-get install -y \
+    novnc \
+    websockify
+
+# Instalar dependencias adicionales para LM Studio
+RUN apt-get install -y \
     libnss3 \
-    libasound2 \
-    && rm -rf /var/lib/apt/lists/*
+    libasound2
+
+# Limpiar cache
+RUN rm -rf /var/lib/apt/lists/*
 
 # Crear usuario no-root
 RUN useradd -m -s /bin/bash lmstudio && \

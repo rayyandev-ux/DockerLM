@@ -58,15 +58,32 @@ echo "🖥️ Iniciando display virtual..."
 Xvfb :99 -screen 0 1024x768x24 -ac +extension GLX +render -noreset &
 export DISPLAY=:99
 
-# Crear archivo de configuración para forzar puerto 1234
+# Crear archivo de configuración para forzar puerto 1234 y activar API
 mkdir -p /home/lmstudio/.config/LM\ Studio
 cat > "/home/lmstudio/.config/LM Studio/settings.json" << 'EOF'
 {
   "server": {
     "port": 1234,
     "host": "0.0.0.0",
-    "autoStart": true
+    "autoStart": true,
+    "enabled": true
+  },
+  "api": {
+    "enabled": true,
+    "port": 1234,
+    "host": "0.0.0.0"
   }
+}
+EOF
+
+# Crear configuración del servidor HTTP
+mkdir -p /home/lmstudio/.cache/lm-studio/.internal
+cat > "/home/lmstudio/.cache/lm-studio/.internal/http-server-config.json" << 'EOF'
+{
+  "port": 1234,
+  "host": "0.0.0.0",
+  "enabled": true,
+  "autoStart": true
 }
 EOF
 
